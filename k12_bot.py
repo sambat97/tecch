@@ -337,7 +337,7 @@ async def click_verification_link_with_browser(verification_url: str) -> dict:
         }
 
 # =====================================================
-# EMAIL MONITORING JOB
+# EMAIL MONITORING JOB - IMPROVED WITH CLICKABLE LINKS
 # =====================================================
 
 async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
@@ -428,8 +428,7 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                             text=(
                                 "🔧 *Link tidak lengkap di email!*\n\n"
                                 f"✅ emailToken ditemukan: `{email_token}`\n"
-                                "🔗 Building complete verification link...\n\n"
-                                f"`{verification_link[:80]}...`"
+                                "🔗 Building complete verification link..."
                             ),
                             parse_mode="Markdown"
                         )
@@ -448,6 +447,9 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                         job.schedule_removal()
                         temp_email_storage.pop(user_id, None)
                         return
+
+                # ✅ STORE VERIFICATION LINK
+                email_data["verification_link"] = verification_link
 
                 if verification_link:
                     await context.bot.send_message(
@@ -474,7 +476,7 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                         verification_status = click_result.get("verification_status", "unknown")
                         status_message = click_result.get("status_message", "")
 
-                        # NOTIFIKASI BERDASARKAN STATUS
+                        # ✅ NOTIFIKASI DENGAN CLICKABLE LINK
                         if verification_status == "approved":
                             await context.bot.send_message(
                                 chat_id=chat_id,
@@ -485,12 +487,15 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                     f"🎯 SheerID Status: `{sheerid_status}`\n"
                                     f"📊 HTTP Status: `{click_result.get('status_code')}`\n"
                                     f"✨ Message: {status_message}\n\n"
-                                    "🔗 Final URL:\n"
+                                    "🔗 *Verification Link:*\n"
+                                    f"`{verification_link}`\n\n"
+                                    "📍 *Final URL:*\n"
                                     f"`{click_result.get('final_url', 'N/A')[:100]}...`\n\n"
                                     "✨ *Verifikasi teacher berhasil!*\n"
                                     "Sekarang kamu bisa gunakan educator discount."
                                 ),
-                                parse_mode="Markdown"
+                                parse_mode="Markdown",
+                                disable_web_page_preview=True
                             )
 
                             await send_log(
@@ -512,17 +517,21 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                     f"🎯 SheerID Status: `{sheerid_status}`\n"
                                     f"📊 HTTP Status: `{click_result.get('status_code')}`\n"
                                     f"💬 Message: {status_message}\n\n"
+                                    "🔗 *Verification Link (manual check):*\n"
+                                    f"`{verification_link}`\n\n"
                                     "📋 *Alasan kemungkinan:*\n"
                                     "• Data tidak cocok dengan database SheerID\n"
                                     "• Informasi teacher tidak valid\n"
                                     "• School tidak match\n\n"
                                     "💡 *Saran:*\n"
+                                    "• Klik link di atas untuk manual check\n"
                                     "• Cek kembali data yang diinput\n"
                                     "• Gunakan data teacher yang valid\n"
                                     "• Coba dengan data berbeda\n\n"
                                     "Ketik /start untuk mencoba lagi."
                                 ),
-                                parse_mode="Markdown"
+                                parse_mode="Markdown",
+                                disable_web_page_preview=True
                             )
 
                             await send_log(
@@ -534,15 +543,19 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                             )
 
                         elif verification_status == "document_required":
-                            # AUTO UPLOAD DOKUMEN!
+                            # Send link first before auto-upload
                             await context.bot.send_message(
                                 chat_id=chat_id,
                                 text=(
                                     "📄 *DOCUMENT UPLOAD REQUIRED!*\n\n"
+                                    f"📧 Email: `{email}`\n\n"
+                                    "🔗 *Verification Link:*\n"
+                                    f"`{verification_link}`\n\n"
                                     "🤖 Bot akan upload dokumen secara otomatis...\n"
                                     "⏳ Generating documents..."
                                 ),
-                                parse_mode="Markdown"
+                                parse_mode="Markdown",
+                                disable_web_page_preview=True
                             )
 
                             # Get user data untuk generate dokumen
@@ -625,9 +638,11 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                             "📄 3 dokumen berhasil di-upload ke SheerID\n\n"
                                             "⏳ Status: *PENDING REVIEW*\n"
                                             "SheerID akan review dokumen dalam beberapa saat.\n\n"
-                                            "Cek email untuk update status."
+                                            f"🔗 *Check Status:*\n`{verification_link}`\n\n"
+                                            "Cek email atau klik link di atas untuk update status."
                                         ),
-                                        parse_mode="Markdown"
+                                        parse_mode="Markdown",
+                                        disable_web_page_preview=True
                                     )
 
                                     await send_log(
@@ -642,17 +657,23 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                         chat_id=chat_id,
                                         text=(
                                             f"❌ Upload failed: {upload_result.get('message')}\n\n"
-                                            "Coba upload manual di browser."
+                                            f"🔗 *Manual upload link:*\n`{verification_link}`\n\n"
+                                            "Klik link di atas untuk upload manual di browser."
                                         ),
-                                        parse_mode="Markdown"
+                                        parse_mode="Markdown",
+                                        disable_web_page_preview=True
                                     )
 
                             except Exception as e:
                                 print(f"❌ Error generating/uploading documents: {e}")
                                 await context.bot.send_message(
                                     chat_id=chat_id,
-                                    text=f"❌ Error: {str(e)}",
-                                    parse_mode="Markdown"
+                                    text=(
+                                        f"❌ Error: {str(e)}\n\n"
+                                        f"🔗 *Manual check link:*\n`{verification_link}`"
+                                    ),
+                                    parse_mode="Markdown",
+                                    disable_web_page_preview=True
                                 )
 
                         elif verification_status == "pending_review":
@@ -663,10 +684,13 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                     "⏳ *Status: UNDER MANUAL REVIEW*\n\n"
                                     f"📧 Email: `{email}`\n"
                                     f"🎯 SheerID Status: `{sheerid_status}`\n\n"
+                                    "🔗 *Verification Link:*\n"
+                                    f"`{verification_link}`\n\n"
                                     "📋 SheerID sedang melakukan review manual.\n"
-                                    "Cek email untuk update status."
+                                    "Klik link di atas untuk cek status atau tunggu email update."
                                 ),
-                                parse_mode="Markdown"
+                                parse_mode="Markdown",
+                                disable_web_page_preview=True
                             )
 
                         else:
@@ -678,12 +702,16 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                                     f"📧 Email: `{email}`\n"
                                     f"🎯 SheerID Status: `{sheerid_status}`\n"
                                     f"📊 HTTP Status: `{click_result.get('status_code')}`\n\n"
-                                    "💡 Akses link ini di browser untuk cek status:\n"
+                                    "🔗 *Verification Link (manual check):*\n"
+                                    f"`{verification_link}`\n\n"
+                                    "💡 Klik link di atas untuk cek status di browser.\n\n"
+                                    "📍 *Final URL:*\n"
                                     f"`{click_result.get('final_url', 'N/A')}`\n\n"
                                     "Response preview:\n"
                                     f"`{click_result.get('response_snippet', '')[:200]}...`"
                                 ),
-                                parse_mode="Markdown"
+                                parse_mode="Markdown",
+                                disable_web_page_preview=True
                             )
                     else:
                         await context.bot.send_message(
@@ -691,10 +719,13 @@ async def monitor_email_job(context: ContextTypes.DEFAULT_TYPE):
                             text=(
                                 "❌ *BROWSER AUTO-CLICK FAILED*\n\n"
                                 f"Error: {click_result.get('message', 'Unknown')}\n\n"
-                                f"🔗 Link: `{verification_link[:100]}...`\n\n"
-                                "Coba klik manual atau /start restart."
+                                "🔗 *Verification Link (manual check):*\n"
+                                f"`{verification_link}`\n\n"
+                                "💡 Klik link di atas untuk manual verification di browser.\n"
+                                "Atau ketik /start untuk restart."
                             ),
-                            parse_mode="Markdown"
+                            parse_mode="Markdown",
+                            disable_web_page_preview=True
                         )
 
                     await delete_email_inbox(email)
@@ -766,30 +797,6 @@ async def log_user_start(update: Update):
     )
     await send_log(text)
 
-async def log_verification_result(
-    user_id: int,
-    full_name: str,
-    school_name: str,
-    email: str,
-    faculty_id: str,
-    success: bool,
-    error_msg: str = "",
-):
-    """Log hasil verifikasi (sukses / gagal)."""
-    status_emoji = "✅" if success else "❌"
-    status_text = "SUCCESS" if success else "FAILED"
-    text = (
-        f"{status_emoji} VERIFICATION {status_text} ({BOT_NAME})\n\n"
-        f"ID: {user_id}\n"
-        f"Name: {full_name}\n"
-        f"School: {school_name}\n"
-        f"Email: {email}\n"
-        f"Faculty ID: {faculty_id}\n"
-    )
-    if not success:
-        text += f"\nError: {error_msg}"
-    await send_log(text)
-
 # =====================================================
 # HELPER: TIMEOUT PER STEP (JOBQUEUE)
 # =====================================================
@@ -852,6 +859,17 @@ def clear_all_timeouts(context: ContextTypes.DEFAULT_TYPE, user_id: int):
         for job in context.job_queue.get_jobs_by_name(job_name):
             job.schedule_removal()
 
+def clear_user_email_monitoring(context: ContextTypes.DEFAULT_TYPE, user_id: int):
+    """Stop email monitoring untuk user tertentu."""
+    if context.job_queue is None:
+        return
+
+    job_name = f"email_monitor_{user_id}"
+    current_jobs = context.job_queue.get_jobs_by_name(job_name)
+    for job in current_jobs:
+        job.schedule_removal()
+        print(f"🛑 Stopped email monitoring for user {user_id}")
+
 # =====================================================
 # CONVERSATION HANDLERS
 # =====================================================
@@ -863,10 +881,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await log_user_start(update)
 
+    # Cleanup data lama
     if user_id in user_data:
         del user_data[user_id]
 
+    if user_id in temp_email_storage:
+        old_email = temp_email_storage[user_id].get("email")
+        if old_email:
+            await delete_email_inbox(old_email)
+        del temp_email_storage[user_id]
+
     clear_all_timeouts(context, user_id)
+    clear_user_email_monitoring(context, user_id)
+
     set_step_timeout(context, chat_id, user_id, "URL")
 
     await update.message.reply_text(
@@ -875,7 +902,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "`https://services.sheerid.com/verify/.../verificationId=...`\n\n"
         "Example:\n"
         "`https://services.sheerid.com/verify/68d47554...`\n\n"
-        "*⏰ Kamu punya 5 menit untuk kirim link*",
+        "*⏰ Kamu punya 5 menit untuk kirim link*\n\n"
+        "💡 Ketik /cancel untuk membatalkan kapan saja",
         parse_mode="Markdown",
     )
 
@@ -894,7 +922,8 @@ async def get_sheerid_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ *Invalid URL!*\n\n"
             "Please send a valid SheerID verification URL.\n"
             "Format: `verificationId=...`\n\n"
-            "*⏰ Kamu punya 5 menit lagi*",
+            "*⏰ Kamu punya 5 menit lagi*\n"
+            "💡 Ketik /cancel untuk membatalkan",
             parse_mode="Markdown",
         )
         set_step_timeout(context, chat_id, user_id, "URL")
@@ -913,7 +942,8 @@ async def get_sheerid_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ *Verification ID:* `{verification_id}`\n\n"
         "What's your *full name*?\n"
         "Example: Elizabeth Bradly\n\n"
-        "*⏰ Kamu punya 5 menit*",
+        "*⏰ Kamu punya 5 menit*\n"
+        "💡 Ketik /cancel untuk membatalkan",
         parse_mode="Markdown",
     )
 
@@ -930,7 +960,8 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "❌ Please provide *first name AND last name*\n"
             "Example: John Smith\n\n"
-            "*⏰ Kamu punya 5 menit lagi*",
+            "*⏰ Kamu punya 5 menit lagi*\n"
+            "💡 Ketik /cancel untuk membatalkan",
             parse_mode="Markdown",
         )
         set_step_timeout(context, chat_id, user_id, "NAME")
@@ -948,7 +979,8 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ *Name:* {full_name}\n\n"
         "What's your *school name*?\n"
         "Example: The Clinton School\n\n"
-        "*⏰ Kamu punya 5 menit*",
+        "*⏰ Kamu punya 5 menit*\n"
+        "💡 Ketik /cancel untuk membatalkan",
         parse_mode="Markdown",
     )
 
@@ -1067,7 +1099,8 @@ async def display_schools(update: Update, schools: list, user_id: int):
             )
         ])
 
-    text += "\n👆 *Click button to select school*"
+    text += "\n👆 *Click button to select school*\n"
+    text += "💡 Atau ketik /cancel untuk membatalkan"
 
     await update.message.reply_text(
         text,
@@ -1216,7 +1249,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "1️⃣ Detect email dari SheerID\n"
             "2️⃣ Klik verification link\n"
             "3️⃣ Upload dokumen jika diperlukan\n\n"
-            "*Tunggu maksimal 5 menit...*",
+            "*Tunggu maksimal 5 menit...*\n\n"
+            "💡 Ketik /cancel untuk membatalkan",
             parse_mode="Markdown"
         )
 
@@ -1409,24 +1443,67 @@ async def upload_documents_to_sheerid(
             return {"success": False, "message": msg}
 
 # =====================================================
-# CANCEL
+# CANCEL COMMAND
 # =====================================================
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /cancel - bisa dipanggil kapan saja"""
     user_id = update.effective_user.id
 
+    # Cleanup semua data user
     if user_id in user_data:
         del user_data[user_id]
 
+    if user_id in temp_email_storage:
+        old_email = temp_email_storage[user_id].get("email")
+        if old_email:
+            await delete_email_inbox(old_email)
+            print(f"🗑️ Deleted inbox: {old_email}")
+        del temp_email_storage[user_id]
+
+    # Stop semua jobs
     clear_all_timeouts(context, user_id)
+    clear_user_email_monitoring(context, user_id)
 
     await update.message.reply_text(
         "❌ *Operation cancelled*\n\n"
+        "✅ Semua proses dihentikan\n"
+        "🗑️ Data dan email monitoring dibersihkan\n\n"
         "Type /start to begin again",
         parse_mode="Markdown",
     )
 
+    print(f"🛑 User {user_id} cancelled operation")
+
     return ConversationHandler.END
+
+# =====================================================
+# ERROR HANDLER
+# =====================================================
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    """Handle errors dan prevent crash loop"""
+    import traceback
+
+    print("❌ Error occurred:")
+    print(traceback.format_exc())
+
+    error_message = str(context.error)
+    if "Conflict" in error_message and "getUpdates" in error_message:
+        print("\n⚠️ CONFLICT ERROR DETECTED!")
+        print("🔄 Waiting 30 seconds before retry...")
+        await asyncio.sleep(30)
+        print("✅ Retry after wait...")
+        return
+
+    if update and isinstance(update, Update) and update.effective_message:
+        try:
+            await update.effective_message.reply_text(
+                "❌ An error occurred. Try /start again",
+                parse_mode="Markdown"
+            )
+        except:
+            pass
 
 # =====================================================
 # MAIN
@@ -1471,6 +1548,10 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CallbackQueryHandler(button_callback))
+    app.add_handler(CommandHandler("cancel", cancel))
+
+    # ✅ ADD ERROR HANDLER
+    app.add_error_handler(error_handler)
 
     print("🚀 Bot is starting with Email Worker automation...")
     print("✨ Features:")
@@ -1479,9 +1560,17 @@ def main():
     print("  • Browser automation for link clicking")
     print("  • Auto document upload (3 files)")
     print("  • Status detection (approved/rejected/pending)")
+    print("  • /cancel command (stop anytime)")
+    print("  • Error handler (prevent crash loop)")
+    print("  • Clickable verification links")
     print()
 
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # ✅ CRITICAL: Fixed polling
+    print("📡 Starting polling with conflict prevention...")
+    app.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=["message", "callback_query"]
+    )
 
 if __name__ == "__main__":
     main()
