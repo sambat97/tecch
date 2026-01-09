@@ -796,80 +796,6 @@ async def log_user_start(update: Update):
         f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
     await send_log(text)
-# =====================================================
-# IP CHECKER FOR RAILWAY
-# =====================================================
-
-async def get_public_ip() -> dict:
-    """Dapatkan IP publik bot dari Railway deployment"""
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            services = [
-                "https://api.ipify.org?format=json",
-                "https://ifconfig.me/ip",
-                "https://icanhazip.com"
-            ]
-            
-            for service in services:
-                try:
-                    resp = await client.get(service)
-                    if resp.status_code == 200:
-                        if "ipify" in service:
-                            data = resp.json()
-                            ip = data.get("ip")
-                        else:
-                            ip = resp.text.strip()
-                        
-                        print(f"✅ IP obtained from {service}: {ip}")
-                        return {"success": True, "ip": ip, "service": service}
-                except Exception as e:
-                    print(f"⚠️ Failed to get IP from {service}: {e}")
-                    continue
-            
-            return {"success": False, "message": "All IP services failed"}
-    except Exception as e:
-        print(f"❌ Error getting IP: {e}")
-        return {"success": False, "message": str(e)}
-
-async def check_ip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk /ip atau /checkip command"""
-    user_id = update.effective_user.id
-    
-    await update.message.reply_text(
-        "🌐 *Checking Railway IP...*\n⏳ Please wait...",
-        parse_mode="Markdown"
-    )
-    
-    ip_result = await get_public_ip()
-    
-    if ip_result.get("success"):
-        ip_address = ip_result.get("ip")
-        service = ip_result.get("service", "unknown")
-        
-        await update.message.reply_text(
-            f"✅ *Railway Bot IP Address*\n\n"
-            f"🌐 IP: `{ip_address}`\n"
-            f"📡 Service: `{service}`\n"
-            f"🤖 Bot: {BOT_NAME}\n\n"
-            f"🔒 This is the public IP of your Railway deployment.\n"
-            f"📍 Location: Railway.app datacenter",
-            parse_mode="Markdown"
-        )
-        
-        await send_log(
-            f"🌐 IP CHECK ({BOT_NAME})\n\n"
-            f"User ID: {user_id}\n"
-            f"IP: {ip_address}\n"
-            f"Service: {service}"
-        )
-    else:
-        await update.message.reply_text(
-            f"❌ *Failed to get IP*\n\n"
-            f"Error: {ip_result.get('message', 'Unknown error')}\n\n"
-            "Please try again later.",
-            parse_mode="Markdown"
-        )
-
 
 # =====================================================
 # HELPER: TIMEOUT PER STEP (JOBQUEUE)
@@ -1623,8 +1549,6 @@ def main():
     app.add_handler(conv_handler)
     app.add_handler(CallbackQueryHandler(button_callback))
     app.add_handler(CommandHandler("cancel", cancel))
-    app.add_handler(CommandHandler("ip", check_ip_command))
-    app.add_handler(CommandHandler("checkip", check_ip_command))
 
     # ✅ ADD ERROR HANDLER
     app.add_error_handler(error_handler)
@@ -1639,12 +1563,6 @@ def main():
     print("  • /cancel command (stop anytime)")
     print("  • Error handler (prevent crash loop)")
     print("  • Clickable verification links")
-    print("  • /ip command (check Railway IP)")
-    print("  • Auto IP notification on startup")
-    print()
-    
-    # Simple: No auto IP check to avoid loop conflict
-    print("💡 Gunakan /ip command untuk cek Railway IP")
     print()
 
     # ✅ CRITICAL: Fixed polling
