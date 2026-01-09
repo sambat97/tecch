@@ -1639,32 +1639,12 @@ def main():
     print("  • /cancel command (stop anytime)")
     print("  • Error handler (prevent crash loop)")
     print("  • Clickable verification links")
-    print("  • /ip command (check Railway IP)")  # ← TAMBAHAN INI
-    print("  • Auto IP notification on startup")  # ← TAMBAHAN INI
+    print("  • /ip command (check Railway IP)")
+    print("  • Auto IP notification on startup")
     print()
     
-    # Auto check IP saat startup
-    print("🌐 Checking Railway deployment IP...")
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        ip_info = loop.run_until_complete(get_public_ip())
-        if ip_info.get("success"):
-            bot_ip = ip_info.get("ip")
-            print(f"✅ Bot Public IP: {bot_ip}")
-            print(f"📡 IP Service: {ip_info.get('service')}")
-            
-            if LOG_BOT_TOKEN and ADMIN_CHAT_ID:
-                loop.run_until_complete(send_log(
-                    f"🚀 BOT STARTED ({BOT_NAME})\n\n"
-                    f"🌐 Railway IP: {bot_ip}\n"
-                    f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                ))
-        else:
-            print(f"⚠️ Could not detect IP: {ip_info.get('message')}")
-        loop.close()
-    except Exception as e:
-        print(f"⚠️ IP check error on startup: {e}")
+    # Simple: No auto IP check to avoid loop conflict
+    print("💡 Gunakan /ip command untuk cek Railway IP")
     print()
 
     # ✅ CRITICAL: Fixed polling
