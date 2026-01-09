@@ -34,8 +34,8 @@ SHEERID_BASE_URL = "https://services.sheerid.com"
 ORGSEARCH_URL = "https://orgsearch.sheerid.net/rest/organization/search"
 
 # Email Worker Configuration
-CUSTOM_MAIL_API = "https://bot-emails.pilarjalar.workers.dev"
-CUSTOM_DOMAIN = "zzzz.biz.id"
+CUSTOM_MAIL_API = "https://mail-bot.pilarjalar.workers.dev"
+CUSTOM_DOMAIN = "school-k12.biz.id"
 
 # Timeouts
 STEP_TIMEOUT = 300  # 5 menit
